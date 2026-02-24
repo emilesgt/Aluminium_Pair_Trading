@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper below."
+title: "Trading Games: Beating Passive Strategies in the Bullish Crypto Market"
+type: software
+authors:
+  - family-names: "Palazzi"
+    given-names: "Rafael Baptista"
+    email: "palazzi@usp.br"
+    affiliation: "Universidade de São Paulo"
+    orcid: "https://orcid.org/0000-0002-2657-1253"
+repository-code: "https://github.com/rafaelpalazzi/trading-games-crypto"
+license: CC-BY-4.0
+version: "1.0.0"
+date-released: "2025-07-08"
+keywords:
+  - pairs trading
+  - cryptocurrency
+  - cointegration
+  - algorithmic trading
+  - risk management
+preferred-citation:
+  type: article
+  authors:
+    - family-names: "Palazzi"
+      given-names: "Rafael Baptista"
+      orcid: "https://orcid.org/0000-0002-2657-1253"
+  title: "Trading Games: Beating Passive Strategies in the Bullish Crypto Market"
+  journal: "Journal of Futures Markets"
+  year: 2025
+  doi: "10.1002/fut.70018"
+  publisher:
+    name: "Wiley"
