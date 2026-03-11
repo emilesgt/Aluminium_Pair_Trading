@@ -112,7 +112,7 @@ def run_adf_screen(dfs: list[pd.DataFrame], anchor_idx: int = 0,
         passes = pv < pvalue_threshold and len(selected) < max_stocks
         if passes:
             selected.append(j)
-        marker = "✓" if passes else "✗"
+        marker = "yes" if passes else "no"
         print(f"  {name:<18} {pv:>10.4f}  {beta:>12.4f}  {marker:>10}")
 
     print(f"\n→ {len(selected)} assets selected: "
