@@ -32,7 +32,7 @@ import gurobipy as gp
 CROSSING_MEAN   = 0.5      # z-score threshold to CLOSE a position
 CROSSING_MAX    = 2.5      # z-score threshold to OPEN a position
 ORIG_AMOUNT     = 10_000   # notional per asset (USD)
-RISK_FREE_RATE  = 0.04     # annualised (4 % T-bill)
+RISK_FREE_RATE  = 0.029    # annualised (2.9 % french 5 year gov. bond)
 TX_COST         = 0.001    # 10 bps per side
 LAMBDA          = 0.5      # risk-return trade-off in objective
 MAX_STOCKS      = 5        # maximum number of individual stocks in basket
