@@ -42,35 +42,42 @@ ADF_PVALUE_THRESHOLD = 0.10  # cointegration significance level
 # 1.  DATA LOADING & ALIGNMENT
 # ---------------------------------------------------------------------------
 
-def load_and_align(file_names: list[str]) -> tuple[list[pd.DataFrame], np.ndarray]:
-    """Read CSVs, keep Date+OHLCV, align on common trading dates."""
+def load_and_align(csv_file: str, asset_columns: list[str]) -> tuple[list[pd.DataFrame], np.ndarray]:
+    """
+    Read one wide CSV:
+    Date, asset1, asset2, ...
+    and convert it into the same dfs format used by the rest of the code.
+    """
+    df = pd.read_csv(csv_file)
+
+    if "Date" not in df.columns:
+        raise ValueError("Missing 'Date' column.")
+
+    df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+    df = df.dropna(subset=["Date"]).copy()
+
+    missing = [c for c in asset_columns if c not in df.columns]
+    if missing:
+        raise ValueError(f"Missing asset columns: {missing}")
+
+    # Keep only Date + selected assets
+    df = df[["Date"] + asset_columns].copy()
+
+    for c in asset_columns:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+
+    # Keep only rows where all selected assets are available
+    df = df.dropna(subset=asset_columns).sort_values("Date").reset_index(drop=True)
+
     dfs = []
-    for f in file_names:
-        df = pd.read_csv(f)
-        if "Date" not in df.columns:
-            raise ValueError(f"Missing 'Date' column in: {f}")
-        df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
-        df = df.dropna(subset=["Date"]).copy()
-        required = ["Open", "High", "Low", "Close", "Volume"]
-        missing = [c for c in required if c not in df.columns]
-        if missing:
-            raise ValueError(f"Missing columns {missing} in {f}")
-        df = df[["Date"] + required].copy()
-        for c in required:
-            df[c] = pd.to_numeric(df[c], errors="coerce")
-        df = df.dropna(subset=["Close"]).sort_values("Date").reset_index(drop=True)
-        dfs.append(df)
+    for c in asset_columns:
+        asset_df = pd.DataFrame({
+            "Date": df["Date"],
+            "Close": df[c]
+        })
+        dfs.append(asset_df)
 
-    # Iterative date intersection
-    while True:
-        base_idx = min(range(len(dfs)), key=lambda i: len(dfs[i]))
-        base_dates = set(dfs[base_idx]["Date"])
-        dfs = [df[df["Date"].isin(base_dates)].copy() for df in dfs]
-        if len(set(len(df) for df in dfs)) == 1:
-            break
-
-    dfs = [df.sort_values("Date").reset_index(drop=True) for df in dfs]
-    common_dates = dfs[0]["Date"].to_numpy()
+    common_dates = df["Date"].to_numpy()
     return dfs, common_dates
 
 
@@ -585,7 +592,7 @@ def sigma3_pipeline(dfs, spreads, lookup, spread_dates,
                    start_idx, end_idx, zscores, tc, betas)
 
 
-def arbitrage_trade(file_names: list[str], lookup: dict,
+def arbitrage_trade(csv_file: str, asset_columns: list[str], lookup: dict,
                     start=None, end=None,
                     dofuller: bool = True, tc: bool = True):
     """
@@ -598,7 +605,7 @@ def arbitrage_trade(file_names: list[str], lookup: dict,
       6. Report performance vs. benchmark
     """
     # ------ 1. Load ------
-    dfs, common_dates = load_and_align(file_names)
+    dfs, common_dates = load_and_align(csv_file, asset_columns)
     anchor_idx = 0   # ALI=F is always index 0
 
     # ------ 2. ADF screening ------
@@ -675,26 +682,29 @@ def arbitrage_trade(file_names: list[str], lookup: dict,
 # ---------------------------------------------------------------------------
 
 def do_aluminium():
-    """Aluminium commodity group (G5) — data from data_ohlcv/ folder."""
+    """Aluminium commodity group (G5) — data from one wide CSV."""
+    asset_columns = [
+        "ALI_F",
+        "XLB",
+        "PICK",
+        "DBB",
+        "AA",
+        "CENX",
+        "KALU",
+        "RIO",
+        "NHYDY",
+        "ACH",
+        "CSTM",
+        "S32.AX",
+        "HINDALCO.NS",
+        "1211.HK",
+    ]
+
     arbitrage_trade(
-        file_names=[
-            "./data_ohlcv/ALI_F.csv",        # 0  — Primary Anchor (Aluminium Futures)
-            "./data_ohlcv/XLB.csv",           # 1  — Materials Select Sector ETF
-            "./data_ohlcv/PICK.csv",          # 2  — iShares MSCI Global Metals & Mining ETF
-            "./data_ohlcv/DBB.csv",           # 3  — Invesco DB Base Metals ETF
-            "./data_ohlcv/AA.csv",            # 4  — Alcoa Corp
-            "./data_ohlcv/CENX.csv",          # 5  — Century Aluminum
-            "./data_ohlcv/KALU.csv",          # 6  — Kaiser Aluminum
-            "./data_ohlcv/RIO.csv",           # 7  — Rio Tinto
-            "./data_ohlcv/NHYDY.csv",         # 8  — Norsk Hydro ADR
-            "./data_ohlcv/ACH.csv",           # 9  — Aluminum Corp of China (Chalco)
-            "./data_ohlcv/CSTM.csv",          # 10 — Constellium
-            "./data_ohlcv/S32.AX.csv",        # 11 — South32
-            "./data_ohlcv/HINDALCO.NS.csv",   # 12 — Hindalco Industries
-            "./data_ohlcv/1211.HK.csv",       # 13 — BYD Company (proxy)
-        ],
+        csv_file="all_prices.csv",
+        asset_columns=asset_columns,
         lookup={
-            "0":  "ALI=F",
+            "0":  "ALI_F",
             "1":  "XLB",
             "2":  "PICK",
             "3":  "DBB",
@@ -709,10 +719,10 @@ def do_aluminium():
             "12": "HINDALCO.NS",
             "13": "1211.HK",
         },
-        start=None,    # use full history
+        start=None,
         end=None,
-        dofuller=True,  # ADF cointegration filter
-        tc=True,        # 10bps transaction costs
+        dofuller=True,
+        tc=True,
     )
 
 
