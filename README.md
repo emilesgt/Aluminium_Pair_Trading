@@ -1,6 +1,6 @@
 # Aluminium Pair Trading
 
-A quantitative pairs trading project focused on aluminium-related assets. This project implements a full systematic pipeline — from universe screening through to out-of-sample backtesting — using Python, Jupyter Notebooks, and R.
+A quantitative pairs trading project focused on aluminium-related assets. This project implements a full systematic pipeline from universe screening through to out-of-sample backtesting using Python, Jupyter Notebooks, and R.
 
 ---
 
